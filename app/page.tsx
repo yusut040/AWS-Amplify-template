@@ -181,15 +181,15 @@ const listLocations = async (input = {}) => {
     // 取得したサブフォルダをStorage BrowserのLocationAccess形式に変換
     const locations = (result.excludedSubpaths ?? []).map((subpath) => {
       // subpathの例: "public/企業A/"
-      // scopeはバケット名/プレフィックスの形式
-      const scope = `${bucketConfig.bucket}/${subpath}`;
+      // scopeはプレフィックスのみ（バケット名は含めない）
+      const scope = subpath;
       
       console.log(`フォルダ検出: ${subpath} -> スコープ: ${scope}`);
       
       return {
-        // 一意識別子としてフルパスを使用
-        id: scope,
-        // S3リソースのスコープ（バケット名/プレフィックス形式）
+        // 一意識別子としてフルパスを使用（バケット名を含む）
+        id: `${bucketConfig.bucket}/${subpath}`,
+        // S3リソースのスコープ（プレフィックスのみ）
         scope: scope,
         // permission: 単一の権限レベル
         // READ_WRITE_DELETE = すべての操作が可能
