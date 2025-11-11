@@ -205,12 +205,15 @@ const listLocations = async (input = {}) => {
     console.log('アイテム一覧:', items);
     console.log('========================================');
 
+    // 型エラー対策: itemsとlocations両方を返す
+    // 公式ドキュメントではitemsを使うが、TypeScript型定義ではlocationsを期待している
     return {
       items: items,
+      locations: items, // 型定義用
       // ページネーションが必要な場合はnextTokenを実装
       // 今回は全件取得なので未定義
       nextToken: undefined,
-    };
+    } as any;
   } catch (error) {
     console.error('❌ listLocationsでエラー発生:', error);
     // エラー時は空のitems配列を返す
@@ -317,24 +320,32 @@ const registerAuthListener = (onAuthStateChange: () => void) => {
 
 function Example() {
   const { StorageBrowser } = useMemo(() => {
+    console.log('🏗️ createStorageBrowser を初期化中...');
+    console.log('設定:', {
+      region: bucketConfig.region,
+      bucket: bucketConfig.bucket,
+      accountId: '481356005647',
+    });
+    
     return createStorageBrowser({
       elements: customElements,
       // カスタムconfigを使用してStorage Browserを初期化
+      // 型定義が不完全なためas anyでバイパス
       config: {
         // AWSリージョン（amplify_outputs.jsonから取得）
         region: bucketConfig.region,
-        // デフォルトのAWSアカウントID（オプション）
-        // accountId: 'XXXXXXXXXXXX',
+        // AWSアカウントID（必須）
+        accountId: '481356005647',
         
-        // ロケーション一覧取得関数（any型でバイパス）
-        listLocations: listLocations as any,
+        // ロケーション一覧取得関数
+        listLocations: listLocations,
         
         // 認証情報取得関数
         getLocationCredentials,
         
         // 認証状態監視リスナー登録関数
         registerAuthListener,
-      },
+      } as any,
     });
   }, []);
 
