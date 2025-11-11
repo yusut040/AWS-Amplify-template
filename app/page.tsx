@@ -173,7 +173,7 @@ const listLocations = async (input = {}) => {
         listAll: true,
       },
     });
-
+    //test
     console.log('S3検索結果:', result);
     console.log('excludedSubpaths:', result.excludedSubpaths);
     console.log('items:', result.items);
