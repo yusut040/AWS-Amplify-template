@@ -155,8 +155,14 @@ const bucketConfig = {
  * - FULL: すべての操作（READ + WRITE + DELETE）
  */
 const listLocations = async (input = {}) => {
+  console.log('========================================');
+  console.log('listLocations が呼ばれました');
+  console.log('バケット設定:', bucketConfig);
+  console.log('========================================');
+  
   try {
     // Amplify Storage APIでS3の`public/`配下のフォルダ一覧を取得
+    console.log('S3のpublic/配下を検索中...');
     const result = await list({
       path: 'public/',
       options: {
@@ -168,11 +174,17 @@ const listLocations = async (input = {}) => {
       },
     });
 
+    console.log('S3検索結果:', result);
+    console.log('excludedSubpaths:', result.excludedSubpaths);
+    console.log('items:', result.items);
+
     // 取得したサブフォルダをStorage BrowserのLocationAccess形式に変換
     const locations = (result.excludedSubpaths ?? []).map((subpath) => {
       // subpathの例: "public/企業A/"
       // scopeはバケット名/プレフィックスの形式
       const scope = `${bucketConfig.bucket}/${subpath}`;
+      
+      console.log(`フォルダ検出: ${subpath} -> スコープ: ${scope}`);
       
       return {
         // 一意識別子としてフルパスを使用
@@ -189,6 +201,10 @@ const listLocations = async (input = {}) => {
       };
     });
 
+    console.log('返却するロケーション数:', locations.length);
+    console.log('ロケーション一覧:', locations);
+    console.log('========================================');
+
     return {
       locations: locations,
       // ページネーションが必要な場合はnextTokenを実装
@@ -196,7 +212,7 @@ const listLocations = async (input = {}) => {
       nextToken: undefined,
     };
   } catch (error) {
-    console.error('Failed to list locations:', error);
+    console.error('❌ listLocationsでエラー発生:', error);
     // エラー時は空のロケーション配列を返す
     return {
       locations: [],
