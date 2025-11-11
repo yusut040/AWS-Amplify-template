@@ -178,44 +178,44 @@ const listLocations = async (input = {}) => {
     console.log('excludedSubpaths:', result.excludedSubpaths);
     console.log('items:', result.items);
 
-    // 取得したサブフォルダをStorage BrowserのLocationAccess形式に変換
-    const locations = (result.excludedSubpaths ?? []).map((subpath) => {
+    // 取得したサブフォルダをStorage Browserのitems形式に変換
+    // 公式ドキュメント通り: { items: [...], nextToken: ... } を返す
+    const items = (result.excludedSubpaths ?? []).map((subpath) => {
       // subpathの例: "public/企業A/"
-      // scopeはプレフィックスのみ（バケット名は含めない）
-      const scope = subpath;
       
-      console.log(`フォルダ検出: ${subpath} -> スコープ: ${scope}`);
+      console.log(`フォルダ検出: ${subpath} -> バケット: ${bucketConfig.bucket}, プレフィックス: ${subpath}`);
       
       return {
-        // 一意識別子としてフルパスを使用（バケット名を含む）
+        // 一意識別子としてフルパスを使用
         id: `${bucketConfig.bucket}/${subpath}`,
-        // S3リソースのスコープ（プレフィックスのみ）
-        scope: scope,
-        // permission: 単一の権限レベル
-        // READ_WRITE_DELETE = すべての操作が可能
-        // これはバックエンドのdefineStorageで定義した権限と一致させる
-        permission: 'READ_WRITE_DELETE' as const,
+        // S3バケット名
+        bucket: bucketConfig.bucket,
+        // S3プレフィックス（フォルダパス）
+        prefix: subpath,
+        // permissions: 配列形式で複数の権限を指定
+        // ['delete', 'get', 'list', 'write'] = すべての操作が可能
+        permissions: ['delete', 'get', 'list', 'write'] as const,
         // PREFIXは特定のフォルダ（プレフィックス）を表す
         // BUCKETはバケット全体へのアクセスを表す
         type: 'PREFIX' as const,
       };
     });
 
-    console.log('返却するロケーション数:', locations.length);
-    console.log('ロケーション一覧:', locations);
+    console.log('返却するアイテム数:', items.length);
+    console.log('アイテム一覧:', items);
     console.log('========================================');
 
     return {
-      locations: locations,
+      items: items,
       // ページネーションが必要な場合はnextTokenを実装
       // 今回は全件取得なので未定義
       nextToken: undefined,
     };
   } catch (error) {
     console.error('❌ listLocationsでエラー発生:', error);
-    // エラー時は空のロケーション配列を返す
+    // エラー時は空のitems配列を返す
     return {
-      locations: [],
+      items: [],
       nextToken: undefined,
     };
   }
@@ -248,9 +248,17 @@ const listLocations = async (input = {}) => {
  * - 型はany使用して柔軟に対応（Storage Browserの内部型定義に依存）
  */
 const getLocationCredentials = async (input: any) => {
+  console.log('🔐 getLocationCredentials が呼ばれました');
+  console.log('入力パラメータ:', input);
+  
   // Amplify Authからセッション情報を取得
   // このセッションにはCognitoから発行されたAWS一時認証情報が含まれる
   const session = await fetchAuthSession();
+  
+  console.log('セッション取得完了:', {
+    hasCredentials: !!session.credentials,
+    hasSessionToken: !!session.credentials?.sessionToken,
+  });
   
   // 認証情報が存在しない場合はエラー
   if (!session.credentials) {
@@ -263,7 +271,7 @@ const getLocationCredentials = async (input: any) => {
   }
 
   // Storage Browserが期待する形式で認証情報を返す
-  return {
+  const result = {
     credentials: {
       accessKeyId: session.credentials.accessKeyId,
       secretAccessKey: session.credentials.secretAccessKey,
@@ -274,6 +282,9 @@ const getLocationCredentials = async (input: any) => {
         : new Date(Date.now() + 3600000), // デフォルト1時間後
     },
   };
+  
+  console.log('認証情報返却完了');
+  return result;
 };
 
 /**
