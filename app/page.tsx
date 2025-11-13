@@ -175,7 +175,7 @@ const bucketConfig = {
  * - input.nextToken: ページネーション用トークン（オプション）
  * 
  * 【戻り値】
- * - items: LocationDataの配列
+ * - locations: LocationDataの配列（Storage Browser preview版形式）
  *   - id: ロケーションの一意識別子
  *   - bucket: S3バケット名
  *   - prefix: S3プレフィックス（例: "public/企業A/"）
@@ -190,8 +190,12 @@ const bucketConfig = {
  * 4. 取得した各フォルダをLocationDataに変換
  * 
  * 【修正内容】
- * - 戻り値を{ items: LocationData[] }形式に統一
+ * - Storage Browser preview版に合わせて戻り値を{ locations: LocationData[] }形式に変更
  * - デバッグログを強化してS3から取得したデータを詳細に出力
+ * 
+ * 【重要】
+ * - このコードはStorage Browser preview版用です
+ * - 安定版では{ items: LocationData[] }を返しますが、preview版では{ locations: LocationData[] }を返す必要があります
  */
 const listLocations = async (input = {}) => {
   console.log('========================================');
@@ -251,21 +255,26 @@ const listLocations = async (input = {}) => {
     console.log('📋 ロケーション一覧:', items);
     console.log('========================================');
 
-    // AWS Amplify Storage Browser公式ドキュメント通りの戻り値
-    // { items: LocationData[], nextToken?: string }
-    return {
-      items: items,
+    // Storage Browser preview版の戻り値形式
+    // preview版では`locations`プロパティを使用
+    const returnValue = {
+      locations: items,
       nextToken: undefined,
     };
+    
+    console.log('📤 返却するデータ:', returnValue);
+    console.log('========================================');
+    
+    return returnValue;
   } catch (error) {
     console.error('❌ listLocationsでエラー発生:', error);
     console.error('エラー詳細:', {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    // エラー時は空のitems配列を返す
+    // エラー時は空のlocations配列を返す（preview版形式）
     return {
-      items: [],
+      locations: [],
       nextToken: undefined,
     };
   }
